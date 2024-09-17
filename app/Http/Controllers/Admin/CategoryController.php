@@ -25,10 +25,8 @@ class CategoryController extends Controller
             ],500);
         }
     }
-    public function create(){
-        return "Lee Lar";
-    }
-    public function store(CategoryStoreRequest $request){
+    
+    public function store(Request $request){
         try {
             $imageName = Str::random(32).".".$request->image->getClientOriginalExtension();
             Category::create([
@@ -44,6 +42,7 @@ class CategoryController extends Controller
                 'message' => 'something went wrong'
             ],500);
         }
+        
     }
     public function edit($id){
         try {
