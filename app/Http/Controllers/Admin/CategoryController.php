@@ -4,58 +4,46 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryStoreRequest;
+use App\Http\Resources\CategoryResource;
 use Illuminate\Http\Request;
 use App\Models\Category;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
+use App\Http\Traits\ApiUseTrait;
+use App\Http\Traits\FileUploadTrait;
 
 class CategoryController extends Controller
 {
-    public function index(){
+    use ApiUseTrait,FileUploadTrait;
+    public function index(Request $request){
         try {
-            $categories = Category::all();
-            return response()->json([
-                'success' => true,
-                'data' => $categories
-            ],200);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'success' => false,
-                'message' => 'something went wrong'
-            ],500);
+            $categories = Category::paginate(($request->per_page) ? $request->per_page : 5);
+            $paginateData = CategoryResource::collection($categories)->response()->getData(true);
+            return $this->responseSuccess(true, "All Categories List", (object)$paginateData,200);
+        } catch (\Exception $e) {
+            return $this->responseFail(false,$e->getMessage() ,500);
         }
     }
     
-    public function store(Request $request){
+    public function store(CategoryStoreRequest $request){
         try {
-            $imageName = Str::random(32).".".$request->image->getClientOriginalExtension();
+            $fileName = $this->uploadFile($request->image, 'categories');
             Category::create([
                 "name"=> $request->name,
-                "image"=>$imageName,
+                "image"=> $fileName,
             ]);
-            $request->image->storeAs('categories', $imageName, 'public');
-            return response()->json([
-                "message"=>"Category Created Successfully",
-            ],201);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'something went wrong'
-            ],500);
+            
+            return $this->responseSuccess(true,'Category Created Successfully',null,201);
+        } catch (\Exception $e) {
+            return $this->responseFail(false,$e->getMessage() ,500);
         }
         
     }
     public function edit($id){
         try {
-            $category = Category::findOrFail($id);
-            return response()->json([
-                'success' => true,
-                'data' => $category
-            ],200);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Category Not Found'
-            ],500);
+            $category = new CategoryResource(Category::findOrFail($id));
+            return $this->responseSuccess(true,'Category List',$category,200);
+
+        } catch (\Exception $e) {
+            return $this->responseFail(false,$e->getMessage() ,500);
         }
     }
     public function update(Request $request, $id){
@@ -66,26 +54,14 @@ class CategoryController extends Controller
         try {
             $category = Category::findOrFail($id);
             if($request->hasFile('image')){
-                if($category->image){
-                    Storage::disk('public')->delete('categories/'.$category->image);
-                }
-                $imageName = Str::random(32).".".$request->image->getClientOriginalExtension();
-                $request->image->storeAs('categories',$imageName,'public');
+                $imageName = $this->UpdateImage($request->image,'categories',$category->image);
                 $category->image = $imageName;
             }
             $category->name = $validate['name'];
             $category->save();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Category Updated Successfully',
-                'data' => $category
-            ]);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Something Went Wrong' 
-            ],500);
+            return $this->responseSuccess(true,'Category Updated Successfully',null,201);
+        } catch (\Exception $e) {
+            return $this->responseFail(false,$e->getMessage() ,500);
         }
     }
     public function destroy($id){
@@ -93,15 +69,9 @@ class CategoryController extends Controller
             $category = Category::findOrFail($id);
             $category->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Category Deleted Successfully',
-            ],200);
+            return $this->responseSuccess(true,'Category Deleted Successfully',null,200);
         }catch (\Throwable $th) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Something Went Wrong',
-            ],500);
+            return $this->responseFail(false,$th->getMessage() ,500);
         }
     }
 }
