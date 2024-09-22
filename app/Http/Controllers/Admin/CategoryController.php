@@ -16,8 +16,23 @@ class CategoryController extends Controller
     public function index(Request $request){
         try {
             $categories = Category::paginate(($request->per_page) ? $request->per_page : 5);
-            $paginateData = CategoryResource::collection($categories)->response()->getData(true);
-            return $this->responseSuccess(true, "All Categories List", (object)$paginateData,200);
+            $data['data'] = CategoryResource::collection($categories);
+            $data['links'] = [
+                'first' => $categories->url(1),
+                'last' => $categories->url($categories->lastPage()),
+                'prev' => $categories->previousPageUrl(),
+                'next' => $categories->nextPageUrl(),
+            ];
+            $data['meta'] = [
+                'current_page' => $categories->currentPage(),
+                'from' => $categories->firstItem(),
+                'last_page' => $categories->lastPage(),
+                'path' =>  $categories->url($categories->currentPage()),
+                'per_page' => $request->per_page,
+                'to'=> $categories->lastItem(),
+                'total' => $categories->total(),
+            ];
+            return $this->responseSuccess(true, "All Categories List", (object)$data,200);
         } catch (\Exception $e) {
             return $this->responseFail(false,$e->getMessage() ,500);
         }

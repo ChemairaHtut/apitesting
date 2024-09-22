@@ -7,9 +7,7 @@ use App\Http\Requests\ProductStoreRequest;
 use App\Http\Resources\ProductResource;
 use App\Http\Traits\ApiUseTrait;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use App\Models\Product;
-use Illuminate\Support\Facades\Storage;
 use App\Http\Traits\FileUploadTrait;
 
 class ProductController extends Controller
@@ -18,8 +16,23 @@ class ProductController extends Controller
     public function index(Request $request){
         try {
             $products = Product::paginate(($request->per_page) ? $request->per_page :5);
-            $paginateData = ProductResource::collection($products)->response()->getData(true);
-            return $this->responseSuccess(true,"Products List", (object)$paginateData,200);
+            $data['data'] = ProductResource::collection($products);
+            $data['links'] = [
+                'first' => $products->url(1),
+                'last' => $products->url($products->lastPage()),
+                'prev' => $products->previousPageUrl(),
+                'next' => $products->nextPageUrl(),
+            ];
+            $data['meta'] = [
+                'current_page' => $products->currentPage(),
+                'from' => $products->firstItem(),
+                'last_page' => $products->lastPage(),
+                'path' =>  $products->url($products->currentPage()),
+                'per_page' => $request->per_page,
+                'to'=> $products->lastItem(),
+                'total' => $products->total(),
+            ];
+            return $this->responseSuccess(true,"Products List", (object)$data,200);
         } catch (\Exception $e) {
             return $this->responseError(false,$e->getMessage(),500);
         }
