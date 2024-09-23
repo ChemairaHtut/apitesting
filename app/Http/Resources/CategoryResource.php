@@ -18,7 +18,15 @@ class CategoryResource extends JsonResource
         return [
             "id"=> $this->id,
             "name"=> $this->name,
-            "image" => asset("/storage/categories/". $this->image),
+            "image" => $this->getImageData(),
         ];
+    }
+    private function getImageData(){
+        if($this->image){
+            return [
+                "image" => asset("/storage/categories/". $this->image->image),
+                "image_name" => $this->image->image_name,
+            ];
+        }
     }
 }

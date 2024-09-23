@@ -40,11 +40,18 @@ class CategoryController extends Controller
     
     public function store(CategoryStoreRequest $request){
         try {
-            $fileName = $this->uploadFile($request->image, 'categories');
-            Category::create([
+            // $fileName = $this->uploadFile($request->image, 'categories');
+            $category = Category::create([
                 "name"=> $request->name,
-                "image"=> $fileName,
             ]);
+            if($request->hasFile("image")){
+                $fileName = $this->uploadFile($request->image,'categories');
+
+                $category->image()->create([
+                    "image" => $fileName,
+                    "image_name" => $request->image->getClientOriginalName(),
+                ]);
+            }
             
             return $this->responseSuccess(true,'Category Created Successfully',null,201);
         } catch (\Exception $e) {
@@ -69,8 +76,13 @@ class CategoryController extends Controller
         try {
             $category = Category::findOrFail($id);
             if($request->hasFile('image')){
-                $imageName = $this->UpdateImage($request->image,'categories',$category->image);
-                $category->image = $imageName;
+                if($category->image){
+                    $imageName = $this->UpdateImage($request->image,'categories',$category->image->image);
+                    $category->image()->update([
+                        "image" => $imageName,
+                        "image_name" => $request->image->getClientOriginalName(),
+                    ]);
+                }
             }
             $category->name = $validate['name'];
             $category->save();

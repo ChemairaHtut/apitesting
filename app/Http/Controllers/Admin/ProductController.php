@@ -15,7 +15,11 @@ class ProductController extends Controller
     use ApiUseTrait, FileUploadTrait;
     public function index(Request $request){
         try {
-            $products = Product::paginate(($request->per_page) ? $request->per_page :5);
+            $query = Product::query();
+            if($request->has("category_id")){
+                $query->where("category_id",$request->category_id);
+            }
+            $products = $query->paginate(($request->per_page) ? $request->per_page :5);
             $data['data'] = ProductResource::collection($products);
             $data['links'] = [
                 'first' => $products->url(1),
@@ -40,13 +44,19 @@ class ProductController extends Controller
     public function store(ProductStoreRequest $request){
         try {
             //$imageName = Str::random(32).".".$request->image->getClientOriginalExtension();
-            $imageName = $this->uploadFile($request->image,'products');
+            //$imageName = $this->uploadFile($request->image,'products');
             $product = Product::create([
                 "name"=> $request->name,
-                "image" => $imageName,
                 "description" => $request->description,
                 "category_id" => $request->category_id,
             ]);
+            if($request->hasFile('image')){
+                $fileName = $this->uploadFile($request->image,'products');
+                $product->image()->create([
+                    "image" => $fileName,
+                    "image_name" => $request->image->getClientOriginalName(),
+                ]);
+            }
             
             //$request->image->storeAs('products', $imageName,'public');
             return $this->responseSuccess(true,'Product Created Successfully',null,201);
@@ -72,15 +82,21 @@ class ProductController extends Controller
         ]);
         try {
             $product = Product::findOrFail($id);
-            if( $request->hasFile("image") ){
-                $imageName = $this->UpdateImage($request->image,'products',$product->image);
-                $product->image = $imageName;
-            }
             $product->name = $validate['name'];
             $product->description = $validate['description'];
             $product->category_id = $validate['category_id'];
+
+            if( $request->hasFile("image") ){
+                if($product->image){
+                    $imageName = $this->UpdateImage($request->image,'products',$product->image->image);
+                    $product->image()->update([
+                        "image" => $imageName,
+                        "image_name" => $request->image->getClientOriginalName(),
+                    ]);
+                }
+            }
             $product->save();
-            return $this->responseSuccess(true,'Product Updated Successfully', $product,201);
+            return $this->responseSuccess(true,'Product Updated Successfully', null,201);
         } catch (\Exception $e) {
             return $this->responseFail(false,$e->getMessage(),500);
         }

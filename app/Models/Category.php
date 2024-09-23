@@ -10,9 +10,12 @@ class Category extends Model
 {
     use HasFactory;
     use SoftDeletes;
-    protected $fillable = ['name','image'];
+    protected $fillable = ['name'];
     protected $dates = ['deleted_at'];
     public function products(){
         return $this->hasMany(Product::class);
+    }
+    public function image(){
+        return $this->morphOne(Image::class,'imageable');
     }
 }
