@@ -52,8 +52,9 @@ class ProductController extends Controller
             ]);
             if($request->hasFile('image')){
                 $fileName = $this->uploadFile($request->image,'products');
+                $file = "products/".$fileName;
                 $product->image()->create([
-                    "image" => $fileName,
+                    "image" => $file,
                     "image_name" => $request->image->getClientOriginalName(),
                 ]);
             }
@@ -67,7 +68,7 @@ class ProductController extends Controller
     }
     public function edit($id){
         try {
-            $product = Product::findOrFail($id);
+            $product = new ProductResource(Product::findOrFail($id));
             return $this->responseSuccess(true,'A Product List', $product,200);
         } catch (\Exception $e) {
             return $this->responseError(false,$e->getMessage(),500);
@@ -89,8 +90,9 @@ class ProductController extends Controller
             if( $request->hasFile("image") ){
                 if($product->image){
                     $imageName = $this->UpdateImage($request->image,'products',$product->image->image);
+                    $image = "products/".$imageName;
                     $product->image()->update([
-                        "image" => $imageName,
+                        "image" => $image,
                         "image_name" => $request->image->getClientOriginalName(),
                     ]);
                 }
@@ -104,6 +106,7 @@ class ProductController extends Controller
     public function destroy($id){
         try {
             $product = Product::findOrFail($id);
+            $this->deleteImage($product);
             $product->delete();
             return $this->responseSuccess(true,'Product Deleted Successfully', $product,200);
         } catch (\Exception $e) {

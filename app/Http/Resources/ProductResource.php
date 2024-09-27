@@ -20,7 +20,8 @@ class ProductResource extends JsonResource
             "name"=> $this->name,
             "description" => $this->description,
             "category_id" => $this->category_id,
-            "image" => $this->getImageData(),
+            "image" => asset("/storage/".$this->image->image),
+            "image_name" => $this->image->image_name
         ];
     }
 

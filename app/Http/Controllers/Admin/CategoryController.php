@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\Category;
 use App\Http\Traits\ApiUseTrait;
 use App\Http\Traits\FileUploadTrait;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
@@ -46,9 +47,9 @@ class CategoryController extends Controller
             ]);
             if($request->hasFile("image")){
                 $fileName = $this->uploadFile($request->image,'categories');
-
+                $file = "categories/".$fileName; 
                 $category->image()->create([
-                    "image" => $fileName,
+                    "image" => $file,
                     "image_name" => $request->image->getClientOriginalName(),
                 ]);
             }
@@ -78,8 +79,9 @@ class CategoryController extends Controller
             if($request->hasFile('image')){
                 if($category->image){
                     $imageName = $this->UpdateImage($request->image,'categories',$category->image->image);
+                    $image = "categories/".$imageName;
                     $category->image()->update([
-                        "image" => $imageName,
+                        "image" => $image,
                         "image_name" => $request->image->getClientOriginalName(),
                     ]);
                 }
@@ -94,8 +96,12 @@ class CategoryController extends Controller
     public function destroy($id){
         try{
             $category = Category::findOrFail($id);
+            // if($category->image){
+            //     Storage::disk('public')->delete($category->image->image);
+            //     $category->image()->delete();
+            // }
+            $this->deleteImage($category);
             $category->delete();
-
             return $this->responseSuccess(true,'Category Deleted Successfully',null,200);
         }catch (\Throwable $th) {
             return $this->responseFail(false,$th->getMessage() ,500);
